@@ -13,6 +13,7 @@ ctx = get_context("fork")
 
 
 def main():
+    """Time the multiprocess and multithreaded searches and log the results."""
     logger = logging.getLogger("Time logger")
     configure_logger(logger, prefix="time")
 

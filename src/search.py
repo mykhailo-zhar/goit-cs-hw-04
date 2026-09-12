@@ -6,6 +6,21 @@ from pathlib import Path
 def search(
     file_path: Path, keywords: list[str], logger: logging.Logger
 ) -> tuple[list[str], Path]:
+    """Search a file for keywords and return those that occur at least once.
+
+    Matching is case-insensitive and token-based (``str.split``). Each keyword
+    is recorded at most once per file. Filesystem errors are logged and treated
+    as a miss rather than raised.
+
+    Args:
+        file_path: File to scan.
+        keywords: Search terms to look for.
+        logger: Logger used for debug and error messages.
+
+    Returns:
+        A pair ``(found, file_path)`` where ``found`` is the list of matched
+        keywords in file order.
+    """
     pid = os.getpid()
     keywords_set = {x.lower() for x in keywords}
     result = []

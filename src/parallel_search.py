@@ -16,6 +16,11 @@ ctx = get_context("spawn")
 
 
 def init_worker(q):
+    """Attach a queue handler so worker logs reach the parent process.
+
+    Args:
+        q: Multiprocessing queue consumed by a ``QueueListener``.
+    """
     logger = logging.getLogger("Process Logger")
     handler = QueueHandler(q)
     handler.setLevel(logging.DEBUG)
@@ -24,11 +29,36 @@ def init_worker(q):
 
 
 def search_worker(file, keywords):
+    """Run :func:`search` in a worker process using the process logger.
+
+    Args:
+        file: Path of the file to scan.
+        keywords: Search terms to look for.
+
+    Returns:
+        The ``(found, file_path)`` pair from :func:`search`.
+    """
     logger = logging.getLogger("Process Logger")
     return search(file, keywords, logger)
 
 
 def search_parallel(q, ctx, files, words: list[str]) -> dict[str, list[Path]]:
+    """Search files for keywords using a process pool.
+
+    Workers are initialized with :func:`init_worker` so their logs go through
+    ``q``. Each file is submitted as a separate task; results are merged in
+    the parent process.
+
+    Args:
+        q: Multiprocessing queue for worker log records.
+        ctx: Multiprocessing context used to create the pool.
+        files: Paths of files to scan.
+        words: Search terms to look for.
+
+    Returns:
+        Mapping of lowercase keyword to the files that contain it. Keywords
+        with no matches are present with an empty list.
+    """
     results = {x.lower(): [] for x in words}
     keywords = list(results.keys())
     with ctx.Pool(

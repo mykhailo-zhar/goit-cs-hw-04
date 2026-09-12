@@ -13,6 +13,20 @@ NUM_WORKERS = 5
 
 
 def search_concurrent(files, words, logger) -> dict[str, list[Path]]:
+    """Search files for keywords using a thread pool.
+
+    Each file is submitted as a separate task. Results from all workers are
+    merged in the calling thread.
+
+    Args:
+        files: Paths of files to scan.
+        words: Search terms to look for.
+        logger: Logger passed through to each worker.
+
+    Returns:
+        Mapping of lowercase keyword to the files that contain it. Keywords
+        with no matches are present with an empty list.
+    """
 
     results = {x.lower(): [] for x in words}
     keywords = results.keys()
