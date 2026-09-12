@@ -79,20 +79,17 @@ if __name__ == "__main__":
     stream_handler = get_streamhandler(formatter)
     file_handler = get_filehandler(formatter, "parallel")
 
-    logger = logging.getLogger("Parallel logger")
-    logger.addHandler(stream_handler)
-    logger.addHandler(file_handler)
-    logger.setLevel(logging.DEBUG)
-
     with ctx.Manager() as manager:
         shared_queue = manager.Queue()
 
-        p_logger = logging.getLogger("Parallel logger (QUEUE)")
+        logger = logging.getLogger("Parallel logger")
 
         queue_handler = QueueListener(
             shared_queue, file_handler, stream_handler, respect_handler_level=True
         )
-        p_logger.setLevel(logging.DEBUG)
+        logger.addHandler(stream_handler)
+        logger.addHandler(file_handler)
+        logger.setLevel(logging.DEBUG)
 
         queue_handler.start()
 
