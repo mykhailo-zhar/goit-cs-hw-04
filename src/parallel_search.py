@@ -11,32 +11,30 @@ NUM_WORKERS = 5
 
 
 def search_parallel(files, words: list[str], logger) -> dict[str, list[Path]]:
-    results = { x.lower(): [] for x in words}
+    results = {x.lower(): [] for x in words}
     keywords = list(results.keys())
     with Pool(processes=NUM_WORKERS) as executor:
-         for found, path in executor.starmap(
-                search,
-                zip(
-                    files,
-                    [keywords for _ in range(len(files))],
-                    [logger for _ in range(len(files))],
-                ),
-            ):
+        for found, path in executor.starmap(
+            search,
+            zip(
+                files,
+                [keywords for _ in range(len(files))],
+                [logger for _ in range(len(files))],
+            ),
+        ):
             for keyword in found:
                 results[keyword].append(path)
-        
 
     return results
 
 
 if __name__ == "__main__":
-    logger = logging.getLogger("Paralllel logger")
+    logger = logging.getLogger("Parallel logger")
     configure_logger(logger, prefix="parallel")
 
     files = [file_path for file_path in DATA_DIR.iterdir() if file_path.is_file()]
 
-
-    keywords = ['she', 'like']
+    keywords = ["she", "like"]
 
     logger.info("Starting")
 
