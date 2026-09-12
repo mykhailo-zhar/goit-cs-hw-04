@@ -1,5 +1,6 @@
 import logging
 from multiprocessing import Pool
+from pathlib import Path
 
 from search import search
 from utility import PROJECT_ROOT, configure_logger
@@ -9,23 +10,23 @@ DATA_DIR = PROJECT_ROOT / "data"
 NUM_WORKERS = 5
 
 
-def search_parallel(files, word, logger):
+def search_parallel(files, words: list[str], logger) -> dict[str, list[Path]]:
+    results = { x.lower(): [] for x in words}
+    keywords = list(results.keys())
     with Pool(processes=NUM_WORKERS) as executor:
-        results = list(
-            executor.starmap(
+         for found, path in executor.starmap(
                 search,
                 zip(
                     files,
-                    [word for _ in range(len(files))],
+                    [keywords for _ in range(len(files))],
                     [logger for _ in range(len(files))],
                 ),
-            )
-        )
+            ):
+            for keyword in found:
+                results[keyword].append(path)
+        
 
-    result_dict = {}
-    for file, result in zip(files, results):
-        result_dict[file] = result
-    return result_dict
+    return results
 
 
 if __name__ == "__main__":
@@ -34,10 +35,11 @@ if __name__ == "__main__":
 
     files = [file_path for file_path in DATA_DIR.iterdir() if file_path.is_file()]
 
-    word = "she"
+
+    keywords = ['she', 'like']
 
     logger.info("Starting")
 
-    results = search_parallel(files, word, logger)
-    for k, v in results.items():
-        logger.debug("File: %s, result: %s", k, v)
+    results = search_parallel(files, keywords, logger)
+    for word, found_files in results.items():
+        logger.debug("File: %s, result: %s", word, [x.as_posix() for x in found_files])
