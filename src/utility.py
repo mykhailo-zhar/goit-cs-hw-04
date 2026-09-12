@@ -4,6 +4,11 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = PROJECT_ROOT / "data"
+
+
+def get_files():
+    return [file_path for file_path in DATA_DIR.iterdir() if file_path.is_file()]
 
 
 def configure_logger(logger: logging.Logger, prefix="concurrent"):

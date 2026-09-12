@@ -2,10 +2,12 @@ import logging
 from multiprocessing import Pool
 from pathlib import Path
 
-from search import search
-from utility import PROJECT_ROOT, configure_logger
-
-DATA_DIR = PROJECT_ROOT / "data"
+if __package__:
+    from .search import search
+    from .utility import configure_logger, get_files
+else:
+    from search import search
+    from utility import configure_logger, get_files
 
 NUM_WORKERS = 5
 
@@ -32,7 +34,7 @@ if __name__ == "__main__":
     logger = logging.getLogger("Parallel logger")
     configure_logger(logger, prefix="parallel")
 
-    files = [file_path for file_path in DATA_DIR.iterdir() if file_path.is_file()]
+    files = get_files()
 
     keywords = ["she", "like"]
 

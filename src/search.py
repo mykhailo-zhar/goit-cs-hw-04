@@ -3,9 +3,11 @@ import os
 from pathlib import Path
 
 
-def search(file_path: Path, keywords: list[str], logger: logging.Logger) -> tuple[list[str], Path] :
+def search(
+    file_path: Path, keywords: list[str], logger: logging.Logger
+) -> tuple[list[str], Path]:
     pid = os.getpid()
-    keywords_set = set(x.lower() for x in keywords)
+    keywords_set = {x.lower() for x in keywords}
     result = []
     try:
         with file_path.open() as file:
@@ -17,7 +19,7 @@ def search(file_path: Path, keywords: list[str], logger: logging.Logger) -> tupl
 
             for file_word in words:
                 lower_word = file_word.lower()
-                if not keywords_set: 
+                if not keywords_set:
                     break
                 if lower_word in keywords_set:
                     result.append(lower_word)
