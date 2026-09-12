@@ -11,15 +11,20 @@ def get_files():
     return [file_path for file_path in DATA_DIR.iterdir() if file_path.is_file()]
 
 
-def configure_logger(logger: logging.Logger, prefix="concurrent"):
-    formatter = logging.Formatter(
+def get_formatter():
+    return logging.Formatter(
         "%(asctime)s - %(name)s - %(threadName)s - %(levelname)s - %(message)s"
     )
 
+
+def get_streamhandler(formatter: logging.Formatter):
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setLevel(logging.DEBUG)
     stream_handler.setFormatter(formatter)
+    return stream_handler
 
+
+def get_filehandler(formatter: logging.Formatter, prefix):
     logs_dir = PROJECT_ROOT / "logs"
     logs_dir.mkdir(parents=True, exist_ok=True)
 
@@ -29,7 +34,12 @@ def configure_logger(logger: logging.Logger, prefix="concurrent"):
     file_handler = logging.FileHandler(log_filename)
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
+    return file_handler
+
+
+def configure_logger(logger: logging.Logger, prefix="concurrent"):
+    formatter = get_formatter()
 
     logger.setLevel(logging.DEBUG)
-    logger.addHandler(stream_handler)
-    logger.addHandler(file_handler)
+    logger.addHandler(get_streamhandler(formatter))
+    logger.addHandler(get_filehandler(formatter, prefix))

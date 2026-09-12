@@ -1,28 +1,42 @@
 import logging
-from multiprocessing import Pool
+from logging.handlers import QueueHandler, QueueListener
+from multiprocessing import get_context
 from pathlib import Path
 
 if __package__:
     from .search import search
-    from .utility import configure_logger, get_files
+    from .utility import get_filehandler, get_files, get_formatter, get_streamhandler
 else:
     from search import search
-    from utility import configure_logger, get_files
+    from utility import get_filehandler, get_files, get_formatter, get_streamhandler
 
 NUM_WORKERS = 5
 
+ctx = get_context("spawn")
 
-def search_parallel(files, words: list[str], logger) -> dict[str, list[Path]]:
+
+def init_worker(q):
+    logger = logging.getLogger("Process Logger")
+    handler = QueueHandler(q)
+    handler.setLevel(logging.DEBUG)
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+
+
+def search_worker(file, keywords):
+    logger = logging.getLogger("Process Logger")
+    return search(file, keywords, logger)
+
+
+def search_parallel(q, ctx, files, words: list[str]) -> dict[str, list[Path]]:
     results = {x.lower(): [] for x in words}
     keywords = list(results.keys())
-    with Pool(processes=NUM_WORKERS) as executor:
+    with ctx.Pool(
+        processes=NUM_WORKERS, initializer=init_worker, initargs=(q,)
+    ) as executor:
         for found, path in executor.starmap(
-            search,
-            zip(
-                files,
-                [keywords for _ in range(len(files))],
-                [logger for _ in range(len(files))],
-            ),
+            search_worker,
+            [(file, keywords) for file in files],
         ):
             for keyword in found:
                 results[keyword].append(path)
@@ -31,15 +45,36 @@ def search_parallel(files, words: list[str], logger) -> dict[str, list[Path]]:
 
 
 if __name__ == "__main__":
+    formatter = get_formatter()
+    stream_handler = get_streamhandler(formatter)
+    file_handler = get_filehandler(formatter, "parallel")
+
     logger = logging.getLogger("Parallel logger")
-    configure_logger(logger, prefix="parallel")
+    logger.addHandler(stream_handler)
+    logger.addHandler(file_handler)
+    logger.setLevel(logging.DEBUG)
 
-    files = get_files()
+    with ctx.Manager() as manager:
+        shared_queue = manager.Queue()
 
-    keywords = ["she", "like"]
+        p_logger = logging.getLogger("Parallel logger (QUEUE)")
 
-    logger.info("Starting")
+        queue_handler = QueueListener(
+            shared_queue, file_handler, stream_handler, respect_handler_level=True
+        )
+        p_logger.setLevel(logging.DEBUG)
 
-    results = search_parallel(files, keywords, logger)
-    for word, found_files in results.items():
-        logger.debug("File: %s, result: %s", word, [x.as_posix() for x in found_files])
+        queue_handler.start()
+
+        files = get_files()
+
+        keywords = ["she", "like"]
+
+        logger.info("Starting")
+
+        results = search_parallel(shared_queue, ctx, files, keywords)
+        queue_handler.stop()
+        for word, found_files in results.items():
+            logger.debug(
+                "File: %s, result: %s", word, [x.as_posix() for x in found_files]
+            )
