@@ -8,7 +8,7 @@ from pathlib import Path
 
 from faker import Faker
 
-from utility import PROJECT_ROOT
+from .utility import PROJECT_ROOT
 
 DATA_DIR = PROJECT_ROOT / "data"
 
